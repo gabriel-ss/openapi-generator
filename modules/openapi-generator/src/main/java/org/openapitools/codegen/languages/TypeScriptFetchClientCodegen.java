@@ -46,6 +46,7 @@ public class TypeScriptFetchClientCodegen extends AbstractTypeScriptClientCodege
     public static final String WITHOUT_RUNTIME_CHECKS = "withoutRuntimeChecks";
     public static final String STRING_ENUMS = "stringEnums";
     public static final String STRING_ENUMS_DESC = "Generate string enums instead of objects for enum values.";
+    public static final String USE_TEMPORAL = "useTemporal";
 
     protected String npmRepository = null;
     private boolean useSingleRequestParameter = true;
@@ -54,6 +55,7 @@ public class TypeScriptFetchClientCodegen extends AbstractTypeScriptClientCodege
     protected boolean addedModelIndex = false;
     protected boolean withoutRuntimeChecks = false;
     protected boolean stringEnums = false;
+    protected boolean useTemporal = false;
 
     // "Saga and Record" mode.
     public static final String SAGAS_AND_RECORDS = "sagasAndRecords";
@@ -98,6 +100,7 @@ public class TypeScriptFetchClientCodegen extends AbstractTypeScriptClientCodege
         this.cliOptions.add(new CliOption(WITHOUT_RUNTIME_CHECKS, "Setting this property to true will remove any runtime checks on the request and response payloads. Payloads will be casted to their expected types.", SchemaTypeUtil.BOOLEAN_TYPE).defaultValue(Boolean.FALSE.toString()));
         this.cliOptions.add(new CliOption(SAGAS_AND_RECORDS, "Setting this property to true will generate additional files for use with redux-saga and immutablejs.", SchemaTypeUtil.BOOLEAN_TYPE).defaultValue(Boolean.FALSE.toString()));
         this.cliOptions.add(new CliOption(STRING_ENUMS, STRING_ENUMS_DESC, SchemaTypeUtil.BOOLEAN_TYPE).defaultValue(Boolean.FALSE.toString()));
+        this.cliOptions.add(new CliOption(USE_TEMPORAL, "Setting this property to true will cast date and date-time strings to the appropriate type of Temporal API.", SchemaTypeUtil.BOOLEAN_TYPE).defaultValue(Boolean.FALSE.toString()));
     }
 
     @Override
@@ -131,6 +134,14 @@ public class TypeScriptFetchClientCodegen extends AbstractTypeScriptClientCodege
     }
     public void setStringEnums(Boolean stringEnums) {
         this.stringEnums = stringEnums;
+    }
+
+    public Boolean getUseTemporal() {
+        return useTemporal;
+    }
+
+    public void setUseTemporal(Boolean useTemporal) {
+        this.useTemporal = useTemporal;
     }
 
     public Boolean getSagasAndRecords() {
@@ -230,10 +241,24 @@ public class TypeScriptFetchClientCodegen extends AbstractTypeScriptClientCodege
             this.setStringEnums(convertPropertyToBoolean(STRING_ENUMS));
         }
 
+        if (additionalProperties.containsKey(USE_TEMPORAL)) {
+            this.setUseTemporal(convertPropertyToBoolean(USE_TEMPORAL));
+            // Sync mustache rendering with flag state
+            if (!useTemporal) additionalProperties.remove(USE_TEMPORAL);
+        }
+
         if (!withoutRuntimeChecks) {
             this.modelTemplateFiles.put("models.mustache", ".ts");
-            typeMapping.put("date", "Date");
-            typeMapping.put("DateTime", "Date");
+
+            if (useTemporal) {
+                languageSpecificPrimitives.add("Temporal.PlainDate");
+                languageSpecificPrimitives.add("Temporal.Instant");
+                typeMapping.put("date", "Temporal.PlainDate");
+                typeMapping.put("DateTime", "Temporal.Instant");
+            } else {
+                typeMapping.put("date", "Date");
+                typeMapping.put("DateTime", "Date");
+            }
         }
 
         if (additionalProperties.containsKey(SAGAS_AND_RECORDS)) {

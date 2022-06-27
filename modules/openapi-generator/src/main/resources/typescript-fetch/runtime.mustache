@@ -271,9 +271,16 @@ function querystringSingleKey(key: string, value: string | number | null | undef
         const valueAsArray = Array.from(value);
         return querystringSingleKey(key, valueAsArray, keyPrefix);
     }
+    {{#useTemporal}}
+    if (value instanceof Temporal.Instant || value instanceof Temporal.PlainDate) {
+        return `${encodeURIComponent(fullKey)}=${encodeURIComponent(value.toString())}`;
+    }
+    {{/useTemporal}}
+    {{^useTemporal}}
     if (value instanceof Date) {
         return `${encodeURIComponent(fullKey)}=${encodeURIComponent(value.toISOString())}`;
     }
+    {{/useTemporal}}
     if (value instanceof Object) {
         return querystring(value as HTTPQuery, fullKey);
     }

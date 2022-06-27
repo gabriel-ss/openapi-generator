@@ -59,6 +59,20 @@ export function {{classname}}FromJSONTyped(json: any, ignoreDiscriminator: boole
         {{/additionalPropertiesType}}
         {{#vars}}
         {{#isPrimitiveType}}
+        {{#useTemporal}}
+        {{#isDate}}
+        '{{name}}': {{^required}}!exists(json, '{{baseName}}') ? undefined : {{/required}}({{#isNullable}}json['{{baseName}}'] === null ? null : {{/isNullable}}Temporal.PlainDate.from(json['{{baseName}}'])),
+        {{/isDate}}
+        {{#isDateTime}}
+        '{{name}}': {{^required}}!exists(json, '{{baseName}}') ? undefined : {{/required}}({{#isNullable}}json['{{baseName}}'] === null ? null : {{/isNullable}}Temporal.Instant.from(json['{{baseName}}'])),
+        {{/isDateTime}}
+        {{^isDate}}
+        {{^isDateTime}}
+        '{{name}}': {{^required}}!exists(json, '{{baseName}}') ? undefined : {{/required}}json['{{baseName}}'],
+        {{/isDateTime}}
+        {{/isDate}}
+        {{/useTemporal}}
+        {{^useTemporal}}
         {{#isDate}}
         '{{name}}': {{^required}}!exists(json, '{{baseName}}') ? undefined : {{/required}}({{#isNullable}}json['{{baseName}}'] === null ? null : {{/isNullable}}new Date(json['{{baseName}}'])),
         {{/isDate}}
@@ -70,6 +84,7 @@ export function {{classname}}FromJSONTyped(json: any, ignoreDiscriminator: boole
         '{{name}}': {{^required}}!exists(json, '{{baseName}}') ? undefined : {{/required}}json['{{baseName}}'],
         {{/isDateTime}}
         {{/isDate}}
+        {{/useTemporal}}
         {{/isPrimitiveType}}
         {{^isPrimitiveType}}
         {{#isArray}}
@@ -118,7 +133,12 @@ export function {{classname}}ToJSON(value?: {{classname}} | null): any {
         {{#vars}}
         {{^isReadOnly}}
         {{#isPrimitiveType}}
+        {{#useTemporal}}
+        '{{baseName}}': {{#isDate}}{{^required}}value.{{name}} === undefined ? undefined : {{/required}}({{#isNullable}}value.{{name}} === null ? null : {{/isNullable}}value.{{name}}.toJSON()){{/isDate}}{{#isDateTime}}{{^required}}value.{{name}} === undefined ? undefined : {{/required}}({{#isNullable}}value.{{name}} === null ? null : {{/isNullable}}value.{{name}}.toJSON()){{/isDateTime}}{{^isDate}}{{^isDateTime}}value.{{name}}{{/isDateTime}}{{/isDate}},
+        {{/useTemporal}}
+        {{^useTemporal}}
         '{{baseName}}': {{#isDate}}{{^required}}value.{{name}} === undefined ? undefined : {{/required}}({{#isNullable}}value.{{name}} === null ? null : {{/isNullable}}value.{{name}}.toISOString().substr(0,10)){{/isDate}}{{#isDateTime}}{{^required}}value.{{name}} === undefined ? undefined : {{/required}}({{#isNullable}}value.{{name}} === null ? null : {{/isNullable}}value.{{name}}.toISOString()){{/isDateTime}}{{^isDate}}{{^isDateTime}}value.{{name}}{{/isDateTime}}{{/isDate}},
+        {{/useTemporal}}
         {{/isPrimitiveType}}
         {{^isPrimitiveType}}
         {{#isArray}}
